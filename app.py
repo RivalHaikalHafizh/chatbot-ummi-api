@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-import tensorflow as tf
+# import tensorflow as tf
 import string
 import pickle
 import numpy as np
