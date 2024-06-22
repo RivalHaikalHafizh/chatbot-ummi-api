@@ -1,7 +1,7 @@
 Flask
 flask-cors
 scikit-learn
-# tensorflow==2.15.0
+tensorflow==2.15.0
 keras==2.15.0
 numpy==1.25.2
 nltk==3.8.1
