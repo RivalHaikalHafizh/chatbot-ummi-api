@@ -1,0 +1,10 @@
+Flask
+flask-cors
+scikit-learn
+# tensorflow==2.15.0
+keras==2.15.0
+numpy==1.25.2
+nltk==3.8.1
+Sastrawi
+Werkzeug==3.0.3
+gunicorn==20.1.0

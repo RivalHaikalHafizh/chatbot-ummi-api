@@ -1,0 +1,20 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+flask-cors = "*"
+scikit-learn = "*"
+keras = "==2.15.0"
+numpy = "==1.25.2"
+nltk = "==3.8.1"
+sastrawi = "*"
+werkzeug = "==3.0.3"
+gunicorn = "==20.1.0"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
