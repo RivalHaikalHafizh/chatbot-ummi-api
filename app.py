@@ -9,7 +9,8 @@ from flask_cors import CORS
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from nltk.stem import WordNetLemmatizer
 import nltk
-
+import tensorflow as tf
+from tensorflow.keras.layers import Layer
 
 app = Flask(__name__)
 CORS(app)
@@ -22,13 +23,39 @@ for resource in nltk_resources:
 
 print("All required NLTK resources are downloaded.")
 
+# Definisikan ulang kelas PositionalEncoding
+class PositionalEncoding(Layer):
+    def __init__(self, position, d_model):
+        super(PositionalEncoding, self).__init__()
+        self.pos_encoding = self.positional_encoding(position, d_model)
+        
+    def get_angles(self, pos, i, d_model):
+        angles = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+        return pos * angles
+
+    def positional_encoding(self, position, d_model):
+        angle_rads = self.get_angles(np.arange(position)[:, np.newaxis],
+                                     np.arange(d_model)[np.newaxis, :],
+                                     d_model)
+        sines = np.sin(angle_rads[:, 0::2])
+        cosines = np.cos(angle_rads[:, 1::2])
+        pos_encoding = np.concatenate([sines, cosines], axis=-1)
+        pos_encoding = pos_encoding[np.newaxis, ...]
+        return tf.cast(pos_encoding, dtype=tf.float32)
+
+    def call(self, inputs):
+        return inputs + self.pos_encoding[:, :tf.shape(inputs)[1], :]
+
+
 # Muat model dan objek pendukung
-model = load_model('chat_model_transformer.h5')
-words = pickle.load(open('words.pkl', 'rb'))
-classes = pickle.load(open('classes.pkl', 'rb'))
+with tf.keras.utils.custom_object_scope({'PositionalEncoding': PositionalEncoding}):
+    model = load_model('chat_model_transformer.h5')
+
+# words = pickle.load(open('words.pkl', 'rb'))
+# classes = pickle.load(open('classes.pkl', 'rb'))
 encoder = pickle.load(open('encoder.pkl', 'rb'))
 token = pickle.load(open('tokenizer.pkl', 'rb'))
-responses = pickle.load(open('responses.pkl', 'rb'))
+responses = pickle.load(open('train_responses.pkl', 'rb'))
 input_shape = model.input_shape[1]
 
 # Load Indonesian stopwords
@@ -60,22 +87,16 @@ def index_get():
 @app.route('/predict', methods=['POST'])
 def predict():
     prediction_input = request.get_json().get('message')
-    # print(prediction_input+" ini input")
     if not input_shape:
         return jsonify({'error': 'No input text provided'}), 400
     texts_p = []
     # Menghapus punktuasi atau tanda baca dan konversi ke huruf kecil
     prediction_input = preprocess_text(prediction_input)
-    # print(prediction_input)
     texts_p.append(prediction_input)
-    # print(texts_p)
     # Melakukan Tokenisasi dan Padding pada data teks
     prediction_input = token.texts_to_sequences(texts_p)
-    # print(prediction_input)
     prediction_input = np.array(prediction_input).reshape(-1)
-    # print(prediction_input)
     prediction_input = pad_sequences([prediction_input], maxlen=input_shape)
-    # print(prediction_input)
     # Mendapatkan hasil prediksi keluaran pada model
     output = model.predict(prediction_input)
     output = output.argmax()
